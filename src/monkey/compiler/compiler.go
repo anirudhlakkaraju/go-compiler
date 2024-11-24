@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"go-compiler/src/monkey/ast"
 	"go-compiler/src/monkey/code"
 	"go-compiler/src/monkey/object"
@@ -47,6 +48,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		err = c.Compile(node.Right)
 		if err != nil {
 			return err
+		}
+
+		switch node.Operator {
+		case "+":
+			c.emit(code.OpAdd)
+		default:
+			return fmt.Errorf("unkown operator: %s", node.Operator)
 		}
 
 	case *ast.IntegerLiteral:
