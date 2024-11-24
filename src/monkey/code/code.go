@@ -13,6 +13,7 @@ type Opcode byte
 // Byte size operation codes with incrementing values
 const (
 	OpConstant Opcode = iota
+	OpAdd
 )
 
 // Definition provides a readable name for the Opcode and number of bytes each operand takes up
@@ -23,6 +24,7 @@ type Definition struct {
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
+	OpAdd:      {"OpAdd", []int{}},
 }
 
 // Lookup returns the definition of operation
@@ -93,6 +95,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 	}
 
 	switch operandCount {
+	case 0:
+		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
