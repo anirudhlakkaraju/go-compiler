@@ -11,6 +11,7 @@ type Compiler struct {
 	constants    []object.Object
 }
 
+// New creates new Compiler with empty instructions and constant pool
 func New() *Compiler {
 	return &Compiler{
 		instructions: code.Instructions{},
@@ -18,6 +19,7 @@ func New() *Compiler {
 	}
 }
 
+// Compile generates instructions given an AST Node
 func (c *Compiler) Compile(node ast.Node) error {
 
 	switch node := node.(type) {
@@ -62,17 +64,20 @@ func (c *Compiler) Bytecode() *Bytecode {
 	}
 }
 
+// addConstant to compiler's constant pool
 func (c *Compiler) addConstant(obj object.Object) int {
 	c.constants = append(c.constants, obj)
 	return len(c.constants) - 1
 }
 
+// emit generates and adds instructions
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
 	return pos
 }
 
+// addInstruction to compiler
 func (c *Compiler) addInstruction(ins []byte) int {
 	posNewInstruction := len(c.instructions)
 	c.instructions = append(c.instructions, ins...)

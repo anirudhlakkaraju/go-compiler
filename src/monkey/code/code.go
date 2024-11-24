@@ -116,6 +116,7 @@ func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
 	return operands, offset
 }
 
+// ReadUint16 reads the next 2 bytes from the given instructions slice and interprets them as a uint16
 func ReadUint16(ins Instructions) uint16 {
 	return binary.BigEndian.Uint16(ins)
 }
