@@ -7,30 +7,17 @@ import (
 	"os"
 	"strings"
 
-	"go-compiler/src/monkey/evaluator"
+	"go-compiler/src/monkey/compiler"
 	"go-compiler/src/monkey/lexer"
-	"go-compiler/src/monkey/object"
 	"go-compiler/src/monkey/parser"
+	"go-compiler/src/monkey/vm"
 )
 
 const PROMPT = ">> "
 
-const MONKEY_FACE = `            __,__
-   .--.  .-"     "-.  .--.
-  / .. \/  .-. .-.  \/ .. \
- | |  '|  /   Y   \  |'  | |
- | \   \  \ 0 | 0 /  /   / |
-  \ '- ,\.-"""""""-./, -' /
-   ''-' /_   ^ ^   _\ '-''
-       |  \._   _./  |
-       \   \ '~' /   /
-        '._ '-=-' _.'
-           '-----'
-`
-
 func REPL(in io.Reader, out io.Writer) {
 	reader := bufio.NewReader(in)
-	env := object.NewEnvironment()
+	// env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -61,11 +48,29 @@ func REPL(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+		comp := compiler.New()
+		err = comp.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "Whoops! Compilation failed: \n %s\n", err)
+			continue
 		}
+
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Whoops! Executing bytecode failed: \n %s\n", err)
+			continue
+		}
+
+		stackTop := machine.StackTop()
+		io.WriteString(out, stackTop.Inspect())
+		io.WriteString(out, "\n")
+
+		// evaluated := evaluator.Eval(program, env)
+		// if evaluated != nil {
+		// 	io.WriteString(out, evaluated.Inspect())
+		// 	io.WriteString(out, "\n")
+		// }
 	}
 }
 
@@ -99,6 +104,19 @@ func acceptUntil(r *bufio.Reader, start, end string) (string, error) {
 
 	return buf.String(), nil
 }
+
+const MONKEY_FACE = `            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+`
 
 func printParserErrors(out io.Writer, errors []string) {
 	io.WriteString(out, MONKEY_FACE)
