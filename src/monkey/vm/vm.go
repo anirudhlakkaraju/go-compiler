@@ -33,7 +33,11 @@ func (vm *VM) StackTop() object.Object {
 	return vm.stack[vm.sp-1]
 }
 
-// Run fetches, decodes and executes VM instructions
+func (vm *VM) LastPoppedStackElem() object.Object {
+	return vm.stack[vm.sp]
+}
+
+// Run fetches, decodes and executes instructions
 func (vm *VM) Run() error {
 	// Iterate through the instructions using an instruction pointer
 	for ip := 0; ip < len(vm.instructions); ip++ {
@@ -58,13 +62,16 @@ func (vm *VM) Run() error {
 
 			result := leftValue + rightValue
 			vm.push(&object.Integer{Value: result})
+
+		case code.OpPop:
+			vm.pop()
 		}
 	}
 
 	return nil
 }
 
-// push objects onto VM call stack
+// push objects onto call stack
 func (vm *VM) push(obj object.Object) error {
 	if vm.sp >= StackSize {
 		return fmt.Errorf("stack overflow")
@@ -76,7 +83,7 @@ func (vm *VM) push(obj object.Object) error {
 	return nil
 }
 
-// pop returns to object at top of the VM call stack
+// pop returns to object at top of the call stack
 func (vm *VM) pop() object.Object {
 	o := vm.stack[vm.sp-1]
 	vm.sp--
