@@ -15,6 +15,16 @@ type vmTestCase struct {
 	expected interface{}
 }
 
+func TestIntegerArithmetic(t *testing.T) {
+	tests := []vmTestCase{
+		{"1", 1},
+		{"2", 2},
+		{"1 + 2", 3},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
@@ -33,20 +43,10 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 			t.Fatalf("compiler error: %s", err)
 		}
 
-		stackElem := vm.StackTop()
+		stackElem := vm.LastPoppedStackElem()
 
 		testExpectedObject(t, tt.expected, stackElem)
 	}
-}
-
-func TestIntegerArithmetic(t *testing.T) {
-	tests := []vmTestCase{
-		{"1", 1},
-		{"2", 2},
-		{"1 + 2", 3},
-	}
-
-	runVmTests(t, tests)
 }
 
 func parse(input string) *ast.Program {
