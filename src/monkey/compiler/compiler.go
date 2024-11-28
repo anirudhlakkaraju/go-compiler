@@ -40,6 +40,21 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpPop)
 
+	case *ast.PrefixExpression:
+		err := c.Compile(node.Right)
+		if err != nil {
+			return err
+		}
+
+		switch node.Operator {
+		case "-":
+			c.emit(code.OpMinus)
+		case "!":
+			c.emit(code.OpBang)
+		default:
+			return fmt.Errorf("unkown operator: %s", node.Operator)
+		}
+
 	case *ast.InfixExpression:
 		// LesserThan operator handled by switching the operands
 		// and emitting opCode for GreaterThan

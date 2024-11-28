@@ -47,6 +47,8 @@ func (vm *VM) Run() error {
 		op := code.Opcode(vm.instructions[ip])
 
 		switch op {
+		case code.OpPop:
+			vm.pop()
 		case code.OpConstant:
 			// read constant index in the constant pool
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
@@ -81,8 +83,17 @@ func (vm *VM) Run() error {
 				return err
 			}
 
-		case code.OpPop:
-			vm.pop()
+		case code.OpBang:
+			err := vm.executeBangOperator()
+			if err != nil {
+				return err
+			}
+
+		case code.OpMinus:
+			err := vm.executeMinusOperator()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -190,4 +201,28 @@ func nativeBoolToBooleanObject(input bool) object.Object {
 		return True
 	}
 	return False
+}
+
+func (vm *VM) executeBangOperator() error {
+	operand := vm.pop()
+
+	switch operand {
+	case True:
+		return vm.push(False)
+	case False:
+		return vm.push(True)
+	default:
+		return vm.push(True)
+	}
+}
+
+func (vm *VM) executeMinusOperator() error {
+	operand := vm.pop()
+
+	if operand.Type() != object.INTEGER_OBJ {
+		return fmt.Errorf("unsupported types for negation: %s", operand.Type())
+	}
+
+	value := operand.(*object.Integer).Value
+	return vm.push(&object.Integer{Value: -value})
 }
