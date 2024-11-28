@@ -28,7 +28,17 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"2 * 2 * 2 * 2 * 2", 32},
 		{"5 * 2 + 10", 20},
 		{"5 + 2 * 10", 25},
-		{"5 * (2 + 10)", 60}}
+		{"5 * (2 + 10)", 60},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestBooleanExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"true", true},
+		{"false", false},
+	}
 
 	runVmTests(t, tests)
 }
