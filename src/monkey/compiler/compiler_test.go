@@ -174,6 +174,30 @@ func TestBooleanExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestConditionals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+			if (true) { 10 }; 3333;
+			`,
+			expectedConstants: []interface{}{10, 3333},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),             // 0000
+				code.Make(code.OpJumpNotTruthy, 7), // 0001
+				code.Make(code.OpConstant, 0),      // 0004
+				// Since conditionals are expressions in Monkey,
+				// OpPop cleares the stack of what the conditional evaluates to,
+				// which in this case is 10, and that value is popped
+				code.Make(code.OpPop),         // 0007
+				code.Make(code.OpConstant, 1), // 0008
+				code.Make(code.OpPop),         // 0011
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
