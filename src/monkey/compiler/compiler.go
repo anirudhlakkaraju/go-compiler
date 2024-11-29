@@ -7,16 +7,30 @@ import (
 	"go-compiler/src/monkey/object"
 )
 
+type Bytecode struct {
+	Instructions code.Instructions
+	Constants    []object.Object
+}
+
+type EmittedInstruction struct {
+	Opcode   code.Opcode
+	Position int
+}
+
 type Compiler struct {
-	instructions code.Instructions
-	constants    []object.Object
+	instructions        code.Instructions
+	constants           []object.Object
+	lastInstruction     EmittedInstruction
+	previousInstruction EmittedInstruction
 }
 
 // New creates new Compiler with empty instructions and constant pool
 func New() *Compiler {
 	return &Compiler{
-		instructions: code.Instructions{},
-		constants:    []object.Object{},
+		instructions:        code.Instructions{},
+		constants:           []object.Object{},
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
 	}
 }
 
@@ -129,6 +143,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
+		// Removing last pop to keep the evaluated value
+		// of the consequence block to be potentially
+		// assigned to a variable in let statement
+		if c.lastInstructionIsPop() {
+			c.removeLastPop()
+		}
+	case *ast.BlockStatement:
+		for _, s := range node.Statements {
+			err := c.Compile(s)
+			if err != nil {
+				return err
+			}
+		}
+
 	}
 
 	return nil
@@ -151,6 +179,9 @@ func (c *Compiler) addConstant(obj object.Object) int {
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
+
+	c.setLastInstruction(op, pos)
+
 	return pos
 }
 
@@ -161,7 +192,23 @@ func (c *Compiler) addInstruction(ins []byte) int {
 	return posNewInstruction
 }
 
-type Bytecode struct {
-	Instructions code.Instructions
-	Constants    []object.Object
+// setLastInstruction assigns the last and second last instructions
+func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
+	previous := c.lastInstruction
+	last := EmittedInstruction{Opcode: op, Position: pos}
+
+	c.previousInstruction = previous
+	c.lastInstruction = last
+}
+
+// lastInstructionIsPop checks if last instruction is OpPop
+func (c *Compiler) lastInstructionIsPop() bool {
+	return c.lastInstruction.Opcode == code.OpPop
+}
+
+// removeLastPop cuts off the last instruction
+func (c *Compiler) removeLastPop() {
+	c.instructions = c.instructions[:c.lastInstruction.Position]
+	c.lastInstruction = c.previousInstruction
+}
 }
