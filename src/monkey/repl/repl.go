@@ -1,94 +1,132 @@
 package repl
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"os"
-	"strings"
-
 	"go-compiler/src/monkey/compiler"
 	"go-compiler/src/monkey/lexer"
 	"go-compiler/src/monkey/parser"
 	"go-compiler/src/monkey/vm"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/chzyer/readline"
 )
 
-const PROMPT = ">> "
+const (
+	PROMPT           = ">> "
+	MULTILINE_PROMPT = "... "
+	EXIT             = "exit()"
+	INTERRUPT        = "^C"
+	HISTORY_PATH     = "/Users/anirudhlakkaraju/Programming/go-compiler/src/monkey/repl_history.txt"
+)
 
 func REPL(in io.Reader, out io.Writer) {
-	reader := bufio.NewReader(in)
+	// reader := bufio.NewReader(in)
 	// env := object.NewEnvironment()
 
-	for {
-		fmt.Printf(PROMPT)
+	// Configure readline
+	rl, err := readline.NewEx(&readline.Config{
+		HistoryFile:     HISTORY_PATH,
+		InterruptPrompt: INTERRUPT,
+		Prompt:          PROMPT,
+	})
+	check(err)
+	defer rl.Close()
 
-		input, err := reader.ReadString('\n')
+	// History buffer
+	history := make([]string, 0)
+
+	for {
+		// Read Input
+		line, err := rl.Readline()
 		check(err)
 
-		input = strings.TrimRight(input, " \n")
-
-		// Exit REPL
-		if input == "exit()" {
+		line = strings.TrimSpace(line)
+		if line == EXIT {
 			fmt.Println("Goodbye!")
-			os.Exit(0)
+			return
 		}
 
 		// Allow multiline input for block statements
-		if len(input) > 0 && input[len(input)-1] == '{' {
-			input, err = acceptUntil(reader, input, "\n\n")
+		if isMultilineStart(line) {
+			line, err = acceptUntil(rl, line, "\n\n")
 			check(err)
 		}
 
-		l := lexer.New(input)
-		p := parser.New(l)
-
-		program := p.ParseProgram()
-		if len(p.Errors()) != 0 {
-			printParserErrors(out, p.Errors())
-			continue
-		}
-
-		comp := compiler.New()
-		err = comp.Compile(program)
-		if err != nil {
-			fmt.Fprintf(out, "Whoops! Compilation failed: \n %s\n", err)
-			continue
-		}
-
-		machine := vm.New(comp.Bytecode())
-		err = machine.Run()
-		if err != nil {
-			fmt.Fprintf(out, "Whoops! Executing bytecode failed: \n %s\n", err)
-			continue
-		}
-
-		stackTop := machine.LastPoppedStackElem()
-		io.WriteString(out, stackTop.Inspect())
-		io.WriteString(out, "\n")
-
-		// evaluated := evaluator.Eval(program, env)
-		// if evaluated != nil {
-		// 	io.WriteString(out, evaluated.Inspect())
-		// 	io.WriteString(out, "\n")
-		// }
+		history = append(history, line)
+		processInput(line, out)
 	}
 }
 
 func check(err error) {
-	if err != nil {
+	if err == readline.ErrInterrupt {
+		fmt.Println("Goodbye!")
+		os.Exit(0)
+	} else if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 }
 
-func acceptUntil(r *bufio.Reader, start, end string) (string, error) {
+// processInput parses and executes Monkey Program
+func processInput(input string, out io.Writer) {
+	l := lexer.New(input)
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParserErrors(out, p.Errors())
+		return
+	}
+
+	comp := compiler.New()
+	err := comp.Compile(program)
+	if err != nil {
+		fmt.Fprintf(out, "Whoops! Compilation failed: \n %s\n", err)
+		return
+	}
+
+	machine := vm.New(comp.Bytecode())
+	err = machine.Run()
+	if err != nil {
+		fmt.Fprintf(out, "Whoops! Executing bytecode failed: \n %s\n", err)
+		return
+	}
+
+	stackTop := machine.LastPoppedStackElem()
+	io.WriteString(out, stackTop.Inspect())
+	io.WriteString(out, "\n")
+
+	// evaluated := evaluator.Eval(program, env)
+	// if evaluated != nil {
+	// 	io.WriteString(out, evaluated.Inspect())
+	// 	io.WriteString(out, "\n")
+	// }
+}
+
+// isMultilineStart checks for start of multiline input
+func isMultilineStart(line string) bool {
+	// detect multiline start based on opening braces
+	openers := []string{"{", "(", "["}
+	for _, opener := range openers {
+		if strings.Contains(line, opener) {
+			return true
+		}
+	}
+	return false
+}
+
+// acceptUntil accepts multiline input until end encountered
+func acceptUntil(rl *readline.Instance, start, end string) (string, error) {
 	var buf strings.Builder
 
 	buf.WriteString(start)
 	buf.WriteRune('\n')
+	rl.SetPrompt(MULTILINE_PROMPT)
+
 	for {
-		fmt.Print("... ")
-		line, err := r.ReadString('\n')
+		line, err := rl.Readline()
 		if err != nil {
 			return "", err
 		}
@@ -101,6 +139,8 @@ func acceptUntil(r *bufio.Reader, start, end string) (string, error) {
 			break
 		}
 	}
+
+	rl.SetPrompt(PROMPT)
 
 	return buf.String(), nil
 }
