@@ -94,6 +94,24 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+
+		case code.OpJump:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			// decrement to adjust with for loop increment
+			ip = pos - 1
+
+		case code.OpJumpNotTruthy:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			// skip over the jump offset bytes
+			// and set ip at the consequence block
+			ip += 2
+
+			conditional := vm.pop()
+			if !vm.isTruthy(conditional) {
+				// since !truthy, set ip at jump offset
+				// to skip the consequence block
+				ip = pos - 1
+			}
 		}
 	}
 
@@ -225,4 +243,13 @@ func (vm *VM) executeMinusOperator() error {
 
 	value := operand.(*object.Integer).Value
 	return vm.push(&object.Integer{Value: -value})
+}
+
+func (vm *VM) isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
 }
