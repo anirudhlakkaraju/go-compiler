@@ -11,6 +11,7 @@ const StackSize = 2048
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
+var Null = &object.Null{}
 
 type VM struct {
 	constants    []object.Object
@@ -111,6 +112,12 @@ func (vm *VM) Run() error {
 				// since !truthy, set ip at jump offset
 				// to skip the consequence block
 				ip = pos - 1
+			}
+
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
 			}
 		}
 	}
