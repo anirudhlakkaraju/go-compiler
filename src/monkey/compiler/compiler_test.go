@@ -182,12 +182,14 @@ func TestConditionals(t *testing.T) {
 			`,
 			expectedConstants: []interface{}{10, 3333},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpTrue),             // 0000
-				code.Make(code.OpJumpNotTruthy, 7), // 0001
-				code.Make(code.OpConstant, 0),      // 0004
+				code.Make(code.OpTrue),              // 0000
+				code.Make(code.OpJumpNotTruthy, 10), // 0001
+				code.Make(code.OpConstant, 0),       // 0004
 				// Since conditionals are expressions in Monkey,
 				// OpPop cleares the stack of what the conditional evaluates to,
 				// which in this case is 10, and that value is popped
+				code.Make(code.OpJump, 11),    // 0007
+				code.Make(code.OpNull),        // 0010
 				code.Make(code.OpPop),         // 0007
 				code.Make(code.OpConstant, 1), // 0008
 				code.Make(code.OpPop),         // 0011
