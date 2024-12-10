@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-compiler/src/monkey/compiler"
 	"go-compiler/src/monkey/lexer"
+	"go-compiler/src/monkey/object"
 	"go-compiler/src/monkey/parser"
 	"go-compiler/src/monkey/vm"
 	"io"
@@ -34,6 +35,10 @@ func REPL(in io.Reader, out io.Writer) {
 	check(err)
 	defer rl.Close()
 
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	// History buffer
 	history := make([]string, 0)
 
@@ -55,7 +60,7 @@ func REPL(in io.Reader, out io.Writer) {
 		}
 
 		history = append(history, line)
-		processInput(line, out)
+		processInput(line, constants, globals, symbolTable, out)
 	}
 }
 
@@ -70,7 +75,7 @@ func check(err error) {
 }
 
 // processInput parses and executes Monkey Program
-func processInput(input string, out io.Writer) {
+func processInput(input string, constants []object.Object, globals []object.Object, symbolTable *compiler.SymbolTable, out io.Writer) {
 	l := lexer.New(input)
 	p := parser.New(l)
 
@@ -80,14 +85,17 @@ func processInput(input string, out io.Writer) {
 		return
 	}
 
-	comp := compiler.New()
+	comp := compiler.NewWithState(symbolTable, constants)
 	err := comp.Compile(program)
 	if err != nil {
 		fmt.Fprintf(out, "Whoops! Compilation failed: \n %s\n", err)
 		return
 	}
 
-	machine := vm.New(comp.Bytecode())
+	code := comp.Bytecode()
+	constants = code.Constants
+
+	machine := vm.NewWithGlobalsStore(code, globals)
 	err = machine.Run()
 	if err != nil {
 		fmt.Fprintf(out, "Whoops! Executing bytecode failed: \n %s\n", err)

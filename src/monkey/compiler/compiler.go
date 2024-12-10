@@ -36,6 +36,14 @@ func New() *Compiler {
 	}
 }
 
+// NewWithState creates a new Compiler with the given symbol table
+func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+	return compiler
+}
+
 // Compile generates instructions given an AST Node
 func (c *Compiler) Compile(node ast.Node) error {
 
