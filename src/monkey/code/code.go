@@ -32,6 +32,7 @@ const (
 	OpSetGlobal
 	OpArray
 	OpHash
+	OpIndex
 )
 
 // Definition provides a readable name for the Opcode and number of bytes each operand takes up
@@ -61,6 +62,7 @@ var definitions = map[Opcode]*Definition{
 	OpSetGlobal:     {"OpSetGlobal", []int{2}},
 	OpArray:         {"OpArray", []int{2}},
 	OpHash:          {"OpHash", []int{2}},
+	OpIndex:         {"OpIndex", []int{}},
 }
 
 // Lookup returns the definition of operation
