@@ -113,16 +113,34 @@ func processInput(input string, constants []object.Object, globals []object.Obje
 	// }
 }
 
-// isMultilineStart checks for start of multiline input
+// isMultilineStart checks if the line ends with an unclosed bracket
 func isMultilineStart(line string) bool {
-	// detect multiline start based on opening braces
-	openers := []string{"{", "(", "["}
-	for _, opener := range openers {
-		if strings.Contains(line, opener) {
-			return true
+	stack := []rune{}
+	bracketPairs := map[rune]rune{
+		')': '(',
+		'}': '{',
+		']': '[',
+	}
+
+	for _, char := range line {
+		// If it's an opening bracket, push to the stack
+		if char == '{' || char == '(' || char == '[' {
+			stack = append(stack, char)
+		}
+
+		// If it's a closing bracket, check if it matches the top of the stack
+		if char == '}' || char == ')' || char == ']' {
+			if len(stack) > 0 && stack[len(stack)-1] == bracketPairs[char] {
+				stack = stack[:len(stack)-1] // Pop the stack
+			} else {
+				// Mismatched closing bracket
+				return false
+			}
 		}
 	}
-	return false
+
+	// If the stack is not empty, there are unclosed brackets
+	return len(stack) > 0
 }
 
 // acceptUntil accepts multiline input until end encountered
