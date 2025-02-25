@@ -1,3 +1,4 @@
+// Package repl provides an interactive Read-Eval-Print Loop for the Monkey language.
 package repl
 
 import (
@@ -14,23 +15,26 @@ import (
 	"github.com/chzyer/readline"
 )
 
+// Constants used in REPL
 const (
-	PROMPT           = ">> "
-	MULTILINE_PROMPT = "... "
-	EXIT             = "exit()"
-	INTERRUPT        = "^C"
-	HISTORY_PATH     = "/Users/anirudhlakkaraju/Programming/go-compiler/src/monkey/repl_history.txt"
+	Prompt          = ">> "
+	MultilinePrompt = "... "
+	Exit            = "exit()"
+	Interrupt       = "^C"
+
+	HistoryPath = "/Users/anirudhlakkaraju/Programming/go-compiler/src/monkey/repl_history.txt"
 )
 
-func REPL(in io.Reader, out io.Writer) {
+// REPL starts the input output loop
+func REPL(_ io.Reader, out io.Writer) {
 	// reader := bufio.NewReader(in)
 	// env := object.NewEnvironment()
 
 	// Configure readline
 	rl, err := readline.NewEx(&readline.Config{
-		HistoryFile:     HISTORY_PATH,
-		InterruptPrompt: INTERRUPT,
-		Prompt:          PROMPT,
+		HistoryFile:     HistoryPath,
+		InterruptPrompt: Interrupt,
+		Prompt:          Prompt,
 	})
 	check(err)
 	defer rl.Close()
@@ -48,7 +52,7 @@ func REPL(in io.Reader, out io.Writer) {
 		check(err)
 
 		line = strings.TrimSpace(line)
-		if line == EXIT {
+		if line == Exit {
 			fmt.Println("Goodbye!")
 			return
 		}
@@ -149,7 +153,7 @@ func acceptUntil(rl *readline.Instance, start, end string) (string, error) {
 
 	buf.WriteString(start)
 	buf.WriteRune('\n')
-	rl.SetPrompt(MULTILINE_PROMPT)
+	rl.SetPrompt(MultilinePrompt)
 
 	for {
 		line, err := rl.Readline()
@@ -166,12 +170,13 @@ func acceptUntil(rl *readline.Instance, start, end string) (string, error) {
 		}
 	}
 
-	rl.SetPrompt(PROMPT)
+	rl.SetPrompt(Prompt)
 
 	return buf.String(), nil
 }
 
-const MONKEY_FACE = `            __,__
+// MonkeyFace during oopsies
+const MonkeyFace = `            __,__
    .--.  .-"     "-.  .--.
   / .. \/  .-. .-.  \/ .. \
  | |  '|  /   Y   \  |'  | |
@@ -185,7 +190,7 @@ const MONKEY_FACE = `            __,__
 `
 
 func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, MONKEY_FACE)
+	io.WriteString(out, MonkeyFace)
 	io.WriteString(out, "Woops! We ran into some monkey business here!\n")
 	io.WriteString(out, " parser errors:\n")
 	for _, msg := range errors {
